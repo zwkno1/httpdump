@@ -1,100 +1,42 @@
-#include <pcap.h>
 
 #include <iostream>
+#include <fstream>
+#include <stdio.h>
 
+#include "libnids.h"
 #include "handler.h"
 
-#define PROMISCUOUS 1
-#define NONPROMISCUOUS 0
+Handler h;
 
-void list_device()
+void tcp_callback(struct tcp_stream * s, void ** x)
 {
-    char err[PCAP_ERRBUF_SIZE] = {0};
-    pcap_if_t * dev = nullptr;
-    if(pcap_findalldevs(&dev, err) != 0)
-    {
-        std::cout << err << std::endl;
-        return;
-    }
-
-    for(pcap_if_t * d = dev; d; d = d->next)
-    {
-        std::cout << d->name << "\t" << (d->description ? d->description : "") << std::endl;
-        for(pcap_addr * addr = d->addresses; addr; addr = addr->next)
-        {
-            char net[128] = {0};
-            if(addr->addr->sa_family == AF_INET)
-            {
-                inet_ntop(addr->addr->sa_family, &((sockaddr_in *)addr->addr)->sin_addr, net, sizeof(net));
-            }
-            else if(addr->addr->sa_family == AF_INET)
-            {
-                inet_ntop(addr->addr->sa_family, &((sockaddr_in6 *)addr->addr)->sin6_addr, net, sizeof(net));
-            }
-
-            if(*net)
-                std::cout << net << std::endl;
-        }
-    }
-
-    pcap_freealldevs(dev);
-
+	// never callback
+	std::cout << "tcp callback xxx" << std::endl;
+	std::fstream f("./a.txt");
+	f << "asdasd";
+	f.close();
+	
+	// ok
+	printf("tcp callback\n");
+	h.handle_tcp(s, x);
 }
 
-void loop_callback(u_char * arg, const struct pcap_pkthdr *pkthdr, const u_char * data)
+int main()
 {
-	// check truncated
-	if(pkthdr->len != pkthdr->caplen)
+	// here we can alter libnids params, for instance:
+	// nids_params.n_hosts=256;
+	//char str[] = "wlp3s0";
+	//nids_params.device = str;
+	if (!nids_init ())
 	{
-		std::cout << "packet trucated" << std::endl;
-		return;
+		std::cout << "nids init error: " << nids_errbuf << std::endl;
+		return 1;
 	}
-
-    reinterpret_cast<Handler *>(arg)->handle(pkthdr->ts, data, pkthdr->len);
+	std::cout << "init ok" << std::endl;
+	std::cout << nids_params.device << std::endl;
+	std::cout << nids_params.filename << std::endl;
+	nids_register_tcp ((void *)tcp_callback);
+	nids_run ();
+	return 0;
 }
 
-int main(int argc, char *argv[])
-{
-    list_device();
-	if(argc < 2)
-	{
-		std::cout << "usage: " << argv[0] << " device" << std::endl;
-		return 1; 
-	}
-
-    const char * deviceName = argv[1];
-    char err[PCAP_ERRBUF_SIZE] = {0};
-    struct bpf_program fp;
-
-    pcap_t * cap = pcap_open_live(deviceName, 65535, 0, -1, err);
-    if(!cap)
-    {
-        std::cout << err << std::endl;
-        return 1;
-    }
-
-    bpf_u_int32 net, mask;
-    if (pcap_lookupnet(deviceName, &net, &mask, err) == -1)
-    {
-        std::cout << err << std::endl;
-        return 1;
-    }
-
-    // Set compile option.
-    if (pcap_compile(cap, &fp, "tcp", 0, net) == -1)
-    {
-        fprintf(stderr, "compile error\n");
-        return 1;
-    }
-
-    // Set packet filter role by compile option.
-    if (pcap_setfilter(cap, &fp) == -1)
-    {
-        fprintf(stderr, "set filter error\n");
-        return 1;
-    }
-
-    Handler h;
-    pcap_loop(cap, 0, loop_callback, (u_char *)&h);
-    return 0;
-}

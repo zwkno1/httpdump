@@ -1,3 +1,4 @@
+
 /*
    Copyright (c) 1999 Rafal Wojtczuk <nergal@avet.com.pl>. All rights reserved.
    See the file COPYING for license details.
@@ -117,8 +118,8 @@ int main ()
 	// nids_params.n_hosts=256;
 	std::cout << nids_params.device << std::endl;
 	std::cout << nids_params.filename << std::endl;
-	char str[] = "wlp3s0";
-	nids_params.device = str;
+	//char str[] = "wlp3s0";
+	//nids_params.device = str;
 	if (!nids_init ())
 	{
 		fprintf(stderr,"%s\n",nids_errbuf);
