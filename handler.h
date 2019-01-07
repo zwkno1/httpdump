@@ -49,8 +49,8 @@ struct Tuple4
 
 inline std::ostream & operator<< (std::ostream & os, const Tuple4 & tuple4)
 {
-    os << tuple4.client.address().to_string() << ":" << tuple4.client.port()
-       << " -> " << tuple4.server.address().to_string() << ":" << tuple4.server.port();
+    os << "[" << tuple4.client.address().to_string() << ":" << tuple4.client.port()
+       << " -> " << tuple4.server.address().to_string() << ":" << tuple4.server.port() << "]";
     return os;
 }
 
@@ -67,9 +67,10 @@ public:
     {
         stream.client_data_callback(std::bind(&Handler::handleData, this, std::placeholders::_1));
         stream.server_data_callback(std::bind(&Handler::handleData, this, std::placeholders::_1));
+        stream.stream_closed_callback(std::bind(&Handler::handleTcpClosed, this, std::placeholders::_1));
 
         Tuple4 tuple4 = Tuple4::fromStream(stream);
-        //std::cout << __FUNCTION__ << " " << tuple4 << std::endl;
+        std::cout << tuple4 << "[ESTABLISHED]" << std::endl;
         auto & parser = parsers_[tuple4];
         parser.tuple4_ = tuple4;
         parser.clientParser_.reset(new HttpParser{});
@@ -91,8 +92,25 @@ public:
     void handleTcpClosed(Tins::TCPIP::Stream & stream)
     {
         Tuple4 tuple4 = Tuple4::fromStream(stream);
-        std::cout << __FUNCTION__ << " " << tuple4 << std::endl;
-        parsers_.erase(tuple4);
+        auto iter = parsers_.find(tuple4);
+        if(iter == parsers_.end())
+            return;
+
+        if(stream.client_flow().is_finished())
+        {
+            std::cout << tuple4 << "[CLIENT_CLOSED]" << std::endl;
+        }
+
+        if(stream.server_flow().is_finished())
+        {
+            std::cout << tuple4 << "[SERVER_CLOSED]" << std::endl;
+        }
+
+        if(stream.is_finished())
+        {
+            std::cout << tuple4 << "[CLOSED]" << std::endl;
+            parsers_.erase(iter);
+        }
     }
 
     void handleData(Tins::TCPIP::Stream & stream)
@@ -128,6 +146,8 @@ public:
         {
             stream.client_data_callback(Tins::TCPIP::Stream::stream_callback_type{});
             stream.server_data_callback(Tins::TCPIP::Stream::stream_callback_type{});
+            stream.stream_closed_callback(Tins::TCPIP::Stream::stream_callback_type{});
+            std::cout << tuple4 << "[DROP]" << std::endl;
             parsers_.erase(tuple4);
         }
     }
@@ -137,7 +157,7 @@ public:
      */
     void handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message)
     {
-        std::cout << tuple4 << " >>> " << message.toString() << std::endl;
+        std::cout << tuple4 << (direction ? "[CLIENT_DATA]" : "[SERVER_DATA]")  << message.toString() << std::endl;
     }
 
     std::map<Tuple4, HttpParserPair> parsers_;

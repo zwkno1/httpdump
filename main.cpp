@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
         // Construct the sniffer we'll use
         Tins::Sniffer sniffer(argv[1], config);
 
-        std::cout << "Starting capture on interface " << argv[1] << std::endl;
+        std::cout << "[CAPTURE]" << argv[1] << std::endl;
 
         Handler h;
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & ex)
     {
-        std::cerr << "Error: " << ex.what() << std::endl;
+        std::cerr << "[ERROR]" << ex.what() << std::endl;
         return 1;
     }
 }
