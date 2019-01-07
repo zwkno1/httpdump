@@ -10,92 +10,135 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <functional>
 
-#include "libnids.h"
+#include <boost/asio.hpp>
 
-inline std::ostream & operator<< (std::ostream & os, const struct tuple4 & t)
+#include <tins/tcp_ip/stream.h>
+#include <tins/ip_address.h>
+#include <tins/ipv6_address.h>
+
+#include "http.h"
+
+using endpoint = boost::asio::ip::tcp::endpoint;
+using address = boost::asio::ip::address;
+
+struct Tuple4
 {
-	os << "[ " << inet_ntoa(in_addr{t.saddr}) << ":" << t.source 
-		<< "\t" << inet_ntoa(in_addr{t.daddr}) << ":" << t.dest << " ]";
-	return os;
+    endpoint client;
+    endpoint server;
+
+    static Tuple4 fromStream(const Tins::TCPIP::Stream & stream)
+    {
+        return Tuple4
+        {
+            { address::from_string(stream.is_v6() ? stream.client_addr_v6().to_string() : stream.client_addr_v4().to_string()), stream.client_port() },
+            { address::from_string(stream.is_v6() ? stream.server_addr_v6().to_string() : stream.server_addr_v4().to_string()), stream.server_port() }
+        };
+    }
+
+    bool operator < (const Tuple4 & other) const
+    {
+        if(client == other.client)
+        {
+            return server < other.server;
+        }
+        return client < other.client;
+    }
+};
+
+inline std::ostream & operator<< (std::ostream & os, const Tuple4 & tuple4)
+{
+    os << tuple4.client.address().to_string() << ":" << tuple4.client.port()
+       << " -> " << tuple4.server.address().to_string() << ":" << tuple4.server.port();
+    return os;
 }
 
 class Handler
 {
+    struct HttpParserPair
+    {
+        Tuple4 tuple4_;
+        std::unique_ptr<HttpParser> clientParser_;
+        std::unique_ptr<HttpParser> serverParser_;
+    };
 public:
-	void handle_tcp(tcp_stream * ts, void **)
-	{
-		std::cout << "handle tcp" <<std::endl;
-		if (ts->nids_state == NIDS_JUST_EST)
-		{
-			handle_established(ts);
-		}
-		else if (ts->nids_state == NIDS_CLOSE)
-		{
-			handle_close(ts);
-		}
-		else if (ts->nids_state == NIDS_RESET)
-		{
-			handle_reset(ts);
-		}
-		else if (ts->nids_state == NIDS_DATA)
-		{
-			handle_data(ts);
-		}
-	}
+    void handleTcpEstablished(Tins::TCPIP::Stream & stream)
+    {
+        stream.client_data_callback(std::bind(&Handler::handleData, this, std::placeholders::_1));
+        stream.server_data_callback(std::bind(&Handler::handleData, this, std::placeholders::_1));
 
-	void handle_data(tcp_stream * ts)
-	{
-		if(ts->client.count_new_urg)
-		{
-			std::cout << ts->addr << " URG <- ";
-			std::cout.write((char *)&ts->client.urgdata, 1);
-			std::cout << std::endl;
-		}
+        Tuple4 tuple4 = Tuple4::fromStream(stream);
+        //std::cout << __FUNCTION__ << " " << tuple4 << std::endl;
+        auto & parser = parsers_[tuple4];
+        parser.tuple4_ = tuple4;
+        parser.clientParser_.reset(new HttpParser{});
+        parser.serverParser_.reset(new HttpParser{});
 
-		if (ts->server.count_new_urg)
-		{
-			std::cout << ts->addr << " URG -> ";
-			std::cout.write((char *)&ts->server.urgdata, 1);
-			std::cout << std::endl;
-		}
+        parser.clientParser_->setMessageHandler([this, &parser](HttpMessage & message)
+        {
+            handleHttpMessage(parser.tuple4_, true, message);
+        });
 
-		if (ts->client.count_new)
-		{
-			std::cout << ts->addr << " -> ";
-			std::cout.write(ts->client.data, ts->client.count);
-			std::cout << std::endl;
-		}
-		else
-		{
-			std::cout << ts->addr << " -> ";
-			std::cout.write(ts->server.data, ts->server.count);
-			std::cout << std::endl;
-		}
-	}
+        parser.serverParser_->setMessageHandler([this, &parser](HttpMessage & message)
+        {
+            handleHttpMessage(parser.tuple4_, false, message);
+        });
 
-	void handle_established(tcp_stream * ts)
-	{
-		// connection described by ts is established
-		// here we decide, if we wish to follow this stream
-		// sample condition: if (ts->addr.dest!=23) return;
-		// in this simple app we follow each stream, so..
-		ts->client.collect++; // we want data received by a client
-		ts->server.collect++; // and by a server, too
-		ts->client.collect_urg++; // we want urgent data received by a client
-		ts->server.collect_urg++; // we want urgent data received by a server
-		std::cout << ts->addr << " ESTABLISHED" << std::endl;
-	}
+        //stream.auto_cleanup_payloads(false);
+    }
 
-	void handle_close(tcp_stream * ts)
-	{
-		// connection has been closed normally
-		std::cout << ts->addr << " CLOSING" << std::endl;
-	}
+    void handleTcpClosed(Tins::TCPIP::Stream & stream)
+    {
+        Tuple4 tuple4 = Tuple4::fromStream(stream);
+        std::cout << __FUNCTION__ << " " << tuple4 << std::endl;
+        parsers_.erase(tuple4);
+    }
 
-	void handle_reset(tcp_stream * ts)
-	{
-		// connection has been closed by RST
-		std::cout << ts->addr << " RESET" << std::endl;
-	}
+    void handleData(Tins::TCPIP::Stream & stream)
+    {
+        Tuple4 tuple4 = Tuple4::fromStream(stream);
+        auto iter = parsers_.find(tuple4);
+        if(iter == parsers_.end())
+            return;
+
+        auto & clientPayload = stream.client_payload();
+        auto & serverPayload = stream.server_payload();
+        bool parseFailed = false;
+
+        if(clientPayload.size() > 0)
+        {
+            size_t result = iter->second.clientParser_->parse((const char *)clientPayload.data(), clientPayload.size());
+            if(result != clientPayload.size())
+            {
+                parseFailed = true;
+            }
+        }
+
+        if(serverPayload.size() > 0)
+        {
+            size_t result = iter->second.serverParser_->parse((const char *)serverPayload.data(), serverPayload.size());
+            if(result != serverPayload.size())
+            {
+                parseFailed = true;
+            }
+        }
+
+        if(parseFailed)
+        {
+            stream.client_data_callback(Tins::TCPIP::Stream::stream_callback_type{});
+            stream.server_data_callback(Tins::TCPIP::Stream::stream_callback_type{});
+            parsers_.erase(tuple4);
+        }
+    }
+
+    /*
+     * @direction@ true: client->server, false: server->client
+     */
+    void handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message)
+    {
+        std::cout << tuple4 << " >>> " << message.toString() << std::endl;
+    }
+
+    std::map<Tuple4, HttpParserPair> parsers_;
 };
