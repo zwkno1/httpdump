@@ -9,16 +9,20 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 include(${CMAKE_CURRENT_SOURCE_DIR}/external/external.cmake)
 
 find_package(Threads)
-find_package(Boost REQUIRED COMPONENTS system regex)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(PCAP REQUIRED)
 
-include_directories(${LIBTINS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(${LIBTINS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ./src)
 
-set(SOURCE_FILES main.cpp
-    detail/http_parser.c
+set(SOURCE_FILES src/main.cpp
+	src/http.cpp
+    src/detail/http_parser.c
     )
 
 add_executable(httpdump ${SOURCE_FILES})
+add_dependencies(httpdump libtins)
 
-target_link_libraries(httpdump ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${LIBTINS_LIBRARIES} ${PCAP_LIBRARIES})
+target_link_libraries(httpdump ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${LIBTINS_LIBRARIES} ${PCAP_LIBRARIES} ${CMAKE_DL_LIBS})
+
+add_subdirectory(examples/protobuf_plugin)
 

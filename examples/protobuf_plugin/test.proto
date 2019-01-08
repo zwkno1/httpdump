@@ -1,0 +1,19 @@
+
+syntax = "proto2";
+
+package test;
+
+message Company
+{
+	message Employee
+	{
+		required uint32 id = 1;
+		required string name = 2;
+		required uint32 age = 3;
+		optional string phone = 4;
+		optional double salary = 5;
+	}
+	required string name = 1;
+	repeated Employee employees = 2;
+}
+

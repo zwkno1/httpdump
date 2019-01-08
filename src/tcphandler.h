@@ -1,60 +1,20 @@
 #pragma once
 
 #include <iostream>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/in_systm.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <functional>
-
-#include <boost/asio.hpp>
 
 #include <tins/tcp_ip/stream.h>
 #include <tins/ip_address.h>
 #include <tins/ipv6_address.h>
 
 #include "http.h"
+#include "httpparser.h"
+#include "tuple4.h"
+#include "httphandler.h"
 
-using endpoint = boost::asio::ip::tcp::endpoint;
-using address = boost::asio::ip::address;
 
-struct Tuple4
-{
-    endpoint client;
-    endpoint server;
 
-    static Tuple4 fromStream(const Tins::TCPIP::Stream & stream)
-    {
-        return Tuple4
-        {
-            { address::from_string(stream.is_v6() ? stream.client_addr_v6().to_string() : stream.client_addr_v4().to_string()), stream.client_port() },
-            { address::from_string(stream.is_v6() ? stream.server_addr_v6().to_string() : stream.server_addr_v4().to_string()), stream.server_port() }
-        };
-    }
-
-    bool operator < (const Tuple4 & other) const
-    {
-        if(client == other.client)
-        {
-            return server < other.server;
-        }
-        return client < other.client;
-    }
-};
-
-inline std::ostream & operator<< (std::ostream & os, const Tuple4 & tuple4)
-{
-    os << "[" << tuple4.client.address().to_string() << ":" << tuple4.client.port()
-       << " -> " << tuple4.server.address().to_string() << ":" << tuple4.server.port() << "]";
-    return os;
-}
-
-class Handler
+class TcpHandler
 {
     struct HttpParserPair
     {
@@ -63,13 +23,18 @@ class Handler
         std::unique_ptr<HttpParser> serverParser_;
     };
 public:
+    void registHandler(HttpHandlerPtr & h)
+    {
+        httpHandlers_.push_back(h);
+    }
+
     void handleTcpEstablished(Tins::TCPIP::Stream & stream)
     {
-        stream.client_data_callback(std::bind(&Handler::handleData, this, std::placeholders::_1));
-        stream.server_data_callback(std::bind(&Handler::handleData, this, std::placeholders::_1));
-        stream.stream_closed_callback(std::bind(&Handler::handleTcpClosed, this, std::placeholders::_1));
+        stream.client_data_callback(std::bind(&TcpHandler::handleData, this, std::placeholders::_1));
+        stream.server_data_callback(std::bind(&TcpHandler::handleData, this, std::placeholders::_1));
+        stream.stream_closed_callback(std::bind(&TcpHandler::handleTcpClosed, this, std::placeholders::_1));
 
-        Tuple4 tuple4 = Tuple4::fromStream(stream);
+        Tuple4 tuple4 = getTuple4FromStream(stream);
         std::cout << tuple4 << "[ESTABLISHED]" << std::endl;
         auto & parser = parsers_[tuple4];
         parser.tuple4_ = tuple4;
@@ -91,7 +56,7 @@ public:
 
     void handleTcpClosed(Tins::TCPIP::Stream & stream)
     {
-        Tuple4 tuple4 = Tuple4::fromStream(stream);
+        Tuple4 tuple4 = getTuple4FromStream(stream);
         auto iter = parsers_.find(tuple4);
         if(iter == parsers_.end())
             return;
@@ -115,7 +80,7 @@ public:
 
     void handleData(Tins::TCPIP::Stream & stream)
     {
-        Tuple4 tuple4 = Tuple4::fromStream(stream);
+        Tuple4 tuple4 = getTuple4FromStream(stream);
         auto iter = parsers_.find(tuple4);
         if(iter == parsers_.end())
             return;
@@ -152,13 +117,30 @@ public:
         }
     }
 
-    /*
-     * @direction@ true: client->server, false: server->client
-     */
     void handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message)
     {
-        std::cout << tuple4 << (direction ? "[CLIENT_DATA]" : "[SERVER_DATA]")  << message.toString() << std::endl;
+        //std::cout << tuple4 << (direction ? "[CLIENT_DATA]" : "[SERVER_DATA]")  << message.toString() << std::endl;
+        for(auto & h : httpHandlers_)
+        {
+            if(h->handleHttpMessage(tuple4, direction, message))
+            {
+                break;
+            }
+        }
     }
 
+    Tuple4 getTuple4FromStream(const Tins::TCPIP::Stream & stream)
+    {
+        return Tuple4
+        {
+            { boost::asio::ip::address::from_string(stream.is_v6() ? stream.client_addr_v6().to_string() : stream.client_addr_v4().to_string()), stream.client_port() },
+            { boost::asio::ip::address::from_string(stream.is_v6() ? stream.server_addr_v6().to_string() : stream.server_addr_v4().to_string()), stream.server_port() }
+        };
+    }
+
+private:
+
     std::map<Tuple4, HttpParserPair> parsers_;
+
+    std::vector<HttpHandlerPtr> httpHandlers_;
 };

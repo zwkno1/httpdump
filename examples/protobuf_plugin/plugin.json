@@ -1,0 +1,6 @@
+{
+	"workDir": "./"
+	"httpHandlers": [
+		"libprotobuf_test.so"
+	]
+}
