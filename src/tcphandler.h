@@ -119,7 +119,6 @@ public:
 
     void handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message)
     {
-        //std::cout << tuple4 << (direction ? "[CLIENT_DATA]" : "[SERVER_DATA]")  << message.toString() << std::endl;
         for(auto & h : httpHandlers_)
         {
             if(h->handleHttpMessage(tuple4, direction, message))
@@ -127,6 +126,7 @@ public:
                 break;
             }
         }
+        std::cout << tuple4 << (direction ? "[CLIENT_DATA]" : "[SERVER_DATA]")  << message.toString() << std::endl;
     }
 
     Tuple4 getTuple4FromStream(const Tins::TCPIP::Stream & stream)
