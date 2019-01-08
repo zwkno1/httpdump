@@ -1,5 +1,6 @@
 #include <plugin.h>
 #include <test.pb.h>
+#include <google/protobuf/util/json_util.h>
 
 namespace
 {
@@ -14,8 +15,12 @@ public:
 		{
 			return false;
 		}
-
-		message.body = company.DebugString();
+		
+		std::string text;
+		google::protobuf::util::JsonPrintOptions option;
+		option.add_whitespace = true;
+		google::protobuf::util::MessageToJsonString(company, &text, option);
+		message.body = std::move(text);
 		return true;
 	}
 
