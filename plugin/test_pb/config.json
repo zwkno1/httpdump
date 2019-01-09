@@ -1,0 +1,6 @@
+{
+	"workDir": "./",
+	"httpHandlers": [
+		"libtest_pb.so"
+	]
+}

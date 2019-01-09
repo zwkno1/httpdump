@@ -1,0 +1,160 @@
+
+package WIFI;
+
+message Request
+{
+  required string sid = 1; /* 检索ID，唯一标识请求，用于Trace */
+
+  optional string client_ip = 2; /* 用户IP地址，明文 */
+  optional string user_agent = 3; /* User-Agent */
+  optional string language = 4; /* zh-CN */
+
+  enum NetType
+  {
+    NT_UnKnown = 0;
+    NT_Ethernet = 1;
+    NT_Wifi = 2;
+    NT_Cellular = 3;
+    NT_Cellular_2G = 4;
+    NT_Cellular_3G = 5;
+    NT_Cellular_4G = 6;
+  }
+  optional NetType net_type = 5;
+
+  optional string os = 6;
+  optional string os_version = 7;
+
+  message DeviceInfo
+  {
+    enum DeviceType
+    {
+      DT_UnKnown = 0;
+      DT_Phone = 1;
+      DT_Pad = 2;
+      DT_PC = 3;
+      DT_TV = 4;
+      DT_Wap = 5;
+    }
+    optional DeviceType type = 1;
+    optional uint32 screen_width = 2; /* 屏幕宽度 */
+    optional uint32 screen_height = 3; /* 屏幕高度 */
+    optional uint32 screen_density = 4; /* 屏幕密度 */
+    optional bool horizontal = 5; /* 横竖屏标记 */
+    optional string vendor = 6; /* 设备生产商 */
+    optional string model = 7; /* 设备型号 */
+  }
+  optional DeviceInfo device_info = 8;
+
+  message AppInfo
+  {
+    optional string app_id = 1;
+    optional string app_name = 2;
+    optional string app_version = 3;
+    optional string pkg_name = 4;
+    optional string mkt = 5; /* 应用商店 */
+    optional string mkt_sn = 6; /* app在商店内的编号 */
+    optional string mkt_cat = 7; /* 分类 */
+    optional string mkt_tag = 8; /* 标签 */
+  }
+  optional AppInfo app_info = 9; /* app信息 */
+
+  message IdInfo
+  {
+    optional string imei = 1;
+    optional string mac = 2;
+    optional string android_id = 3;
+    optional string android_adid = 4; /* android advertising ID */
+    optional string idfa = 5; /* iOS(>=6) idfa */
+    optional string openUDID = 6; /* iOS(< 6) */
+  }
+  optional IdInfo id_info = 10; /* ID信息 */
+
+  message AdSlotInfo
+  {
+    optional string id = 1; /* 广告位ID */
+    optional uint32 width = 2;
+    optional uint32 height = 3;
+
+    enum AdType
+    {
+      AT_ALL = 0; /* 无限制 */
+      AT_REDIRECT = 1; /* 点击跳转 */
+      AT_DOWNLOAD = 2; /* 点击下载 */
+      AT_LBA = 3; /* LBA */
+      AT_ONLYSHOW = 4; /* 仅展示  */
+    }
+    optional AdType type = 4; /* 广告位能接受的广告类型 */
+    optional bool open_screen = 5; /* 开屏标记，请使用ad_slot_type判断广告位类型 */
+
+    enum AdSlotType
+    {
+      AST_BANNER = 0; /* banner广告位 */
+      AST_OPEN_SCREEN = 1; /* 开屏广告位 */
+      AST_TABLE_PLAQUE = 2; /* 插屏广告位 */
+      AST_FEEDS = 3; /* feeds流广告位 */
+      AST_INTEGRAL_WALL = 4; /* 积分墙广告位 */
+      AST_QUIT = 5; /* 退出广告位 */
+      AST_PUSH = 6; /* push广告 */
+    }
+    optional AdSlotType ad_slot_type = 6; /* 广告位类型 */
+    optional uint32 min_cpm = 7; /* 广告位底价 */
+    optional uint32 req_num = 8 [default = 1]; /* 广告位请求的广告条数，默认请求1条广告 */
+
+    repeated string excluded_landing_page_url = 9; /* 不允许的落地页url */
+    repeated int32 excluded_category = 10; /* 不允许的行业类型 */
+    repeated int32 allowed_category = 11; /* 仅允许的行业类型 */
+
+    repeated int32 posid = 13;
+    optional int32 page_index = 14; /* 页编号*/
+  }
+
+  repeated AdSlotInfo ad_slots = 11; /* 广告位信息，默认一个 */
+  optional bool is_test = 12 [default=false]; /* 测试请求标记 */
+  
+  optional double longitude = 14;
+  optional double latitude = 15;
+  optional uint32 lalo_type = 16; /* 0 高德, 1 百度, 2 腾讯, 3 谷歌 */
+  optional int32 age = 17;
+  optional int32 gender = 18; /* 0 女, 1 男 */
+  optional string media_index = 23; //媒体的序号
+  repeated string type_id_list = 24; // 广告支持的广告样式的列表
+  optional bool is_https = 25 [default = false]; //是否https, true的话，返回的物料地址和上报地址都必须是https的，否则会被过滤
+  message CustomizedInfo
+  {
+    optional string key = 1;
+    optional string val = 2;
+  }
+  repeated CustomizedInfo customized_infos = 28;
+  optional string detail_title = 29;    /* 详情页title */
+  optional string page_url = 30; /* 详情页地址 */
+}
+
+message Response
+{
+  required string sid = 1; /* 拷贝request中的sid */
+
+  message AdInfo
+  {
+    optional string id = 1; /* 广告位ID */
+    optional string ad_id = 2; /* 广告ID */
+    optional string creative_id = 3; /* 广告创意ID */
+    optional uint32 max_cpm = 4; /* 最高竞价，单位：分 */
+    optional bool is_html = 5; /* 是否是HTML物料 */
+    optional string html_snippet = 6; /* HTML物料 */
+    optional string json = 7; /* JSON物料 */
+    optional string ext_data = 8; /* 附带在展现日志中的额外数据 */
+    optional int32 posid = 9; /* feeds流等广告的位置，如果不填充，则竞价不考虑位置信息 */
+
+    repeated int32 posids = 11; /* 位置数组，可能是请求数组的子集 */
+    repeated uint32 max_cpms = 12; /* 报价数组，不同位置的报价值，和posid对应 */
+    optional int32  fix_pos = 13 [default=0]; /* 1表示在adx里面放到第一个广告位 */
+    optional string ad_source = 14;
+    optional bool reviewed = 15; // 标记广告是否是预审过的
+  }
+
+  repeated AdInfo ad_infos = 2; /* 召回的广告，无召回时无需装填，一个广告位返回多个广告时，都填充在该数组 */
+  optional string debug_info = 3; /* debug 信息 */
+  optional uint32 process_time_ms = 4; /* 处理耗时，单位：ms */
+  repeated string expids = 5; /* 实验标记，内部使用 */
+}
+

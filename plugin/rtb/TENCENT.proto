@@ -1,0 +1,221 @@
+
+package TENCENT;
+
+//审核接口和免审核接口公用 request
+message Request
+{
+	message Impression
+	{
+		message ImpExt
+		{
+			optional uint32 chid = 1;           //渠道id
+			repeated uint32 stype = 2;          //ssp专用：仅图片（默认）2：仅文字；3：图文（信息流）4:三小图
+		}
+		message Banner
+		{
+			optional uint32 width = 1;     		//广告位宽度
+			optional uint32 height = 2;    		//广告位高度
+			repeated string mimes = 3;          //支持的素材类型(如 "jpg","swf") repeated结构表示可以是多种选择中的一个，如“jpg”，“gif”，“swf”
+			optional string extra_style = 4;	//该广告位除广告位规格外额外允许投放的素材尺寸：960*90;1000*90(分号分隔多个 宽*高)
+			optional uint32 visibility = 5;		//广告位所在的屏幕位置: 0:未知 1：首屏 2：非首屏（腾讯网等pc资源才有本字段，否则为空）
+		}
+		message Video
+		{
+			repeated string mimes = 1;     		//支持播放的内容类型(如 "flv","swf")
+			optional uint32 linearity = 2; 		//[无效字段]默认值填1  linear/in-stream(1) or non-linear/overlay(2)
+			optional uint32 minduration = 3; 	//广告视频最短时长 单位毫秒 口播、前贴、中插和后贴这几个资源位dsp出单的素材时长不能小于最小时长（仅rtb）
+			optional uint32 maxduration = 4;  	//广告视频最长时长 单位毫秒 口播、前贴、中插和后贴这几个资源位dsp出单的素材时长不能大于最大时长
+			optional uint32 protocol = 5;  	 	//[无效字段]目前没有实际作用，vast 1.0/2.0/3.0/wrapper
+			optional uint32 width = 6;     		//广告位宽度
+			optional uint32 height = 7;    		//广告位高度
+		}
+		message MaterialFormat
+		{
+			optional uint32 width = 1;     		//广告位宽度,txt类型时表示中文个数
+			optional uint32 height = 2;    		//广告位高度,txt类型时高度为0
+			optional string mimes = 3;     		//此种播放形式要求的,素材允许的类型,全部小写,多个格式用,隔开 如“swf,jgp,txt”
+		}
+		optional string id = 1;     			//标识每一次曝光的唯一ID,需要在回复出单时回带给adx，填写到Response. seatbid[0]. bid. Id字段中
+		optional string tagid = 2;     			//广告位ID，dsp先同步到腾讯资源的素材标准，然后根据本字段识别曝光资源的来源（如源于腾讯网或新闻客户端，或者快报app）和素材标准（有几个素材，每个素材尺寸）（如：tagid =”App_Stream_news_news”表示新闻客户端信息流）
+		optional float bidfloor = 3;   			//曝光底价，单位:千次曝光分 dsp出价必须高于本字段的价格，否则无法参与竞价，adx会在底价校验环节过滤掉本次竞价（仅rtb）
+		optional Banner banner = 4;    			//banner广告位信息（框外资源才有，否则为空）本字段在移动端资源可以忽略
+		optional Video video = 5;      			//video广告位信息(框内资源才有，否则为空)
+		optional string clientid = 6;			//[无效字段]
+		optional string tradecode = 7;       	//该广告位的限制行业编码列表，如：018;014008;008014013;006;001;004;002(一级，二级，三级)，行业编码的具体含义dsp可以离线同步到一个行业编码表（仅rtb）
+		optional string sns_lists = 8;			//[无效字段] 该广告位允许的社交化播放形式列表
+		optional string dealid = 9;			    // 预定的资源id，仅pd和pdb业务使用，通过本id可以知道本次曝光对应的品牌和排期，本字段为dsp选单的核心字段（仅pd&pdb）
+		repeated MaterialFormat adm_require = 10;     //rtb时填写第一个默认播放形式要求的素材格式，dsp还可使用的其他rtb素材规格以离线同步为准，dsp可忽略本字段；pd&pdb时填写预定播放形式所要求的素材格式。当本字段存在时，DSP所回复的订单必须素材顺序和格式都一致; 
+		optional ImpExt imp_ext = 11;           //[无效字段]附加信息ssp使用
+		optional string channel = 12;            //新闻频道号或视频内容id  仅提供编码，不提供频道映射关系
+		optional string date = 13;              // [无效字段]请求曝光的日期（闪屏用）格式 YYYY-MM-DD
+		optional uint32 tag_seq = 14;           // [无效字段]信息流广告位的位置 1-255
+		message DisplayType
+		{
+			optional uint32 display_type = 1;          //允许广告形式 1:信息流大图 2:原生信息流 3:信息流三小图 4:组图最后一帧 5:前帖片 6:暂停 7:视频信息流视频广告
+			repeated uint32 click_type = 2;            //点击类型 1：app唤醒  2：下载  0：默认跳转落地页
+			repeated MaterialFormat adm_require = 3;   //免审核rtb方式下 要求DSP回复的素材格式。多素材广告时，DSP所回复的订单必须素材顺序和格式都一致（仅rtb）
+		}
+		repeated DisplayType display_type = 15;     //播放形式类型（仅免审核模式才有本字段，rtb时列举所有可用的播放形式，pd&pdb时只有一个预定的播放形式）      
+		repeated string dealids = 16;			    //[无效字段]本次曝光的备选资源id（可选）（仅pd&pdb）
+		optional uint32 max_order_count = 17;       //允许对这个imp回复的最大订单数（仅rtb）
+	}
+	message Site
+	{
+		optional string name = 1; 				//网站名称
+		optional string page = 2; 				//当前页面url
+		optional string ref = 3;  				//referrer url
+		optional string channel = 4;            //频道号   无效字段
+	}
+	message Device
+	{
+		optional string ip = 1; 				//用户ip
+		optional string ua = 2; 				//设备user-agent
+		message Geo
+		{
+			optional float latitude = 1;		//纬度，取值从-90到90，南为负值
+			optional float longitude = 2;		//经度，取值从-180到180，西为负值
+		}
+		optional Geo geo = 3;					//[无效字段] 地理位置信息，只提供一定精度模糊值
+		optional string idfa = 4;				//IDFA,默认不加密,用户设备如果为ios系统且未关闭idfa，本字段会填写原始idfa，否则为空
+		optional uint32 idfa_enc = 5;			//0: 明文，1 ：MD5(idfa)转大写, 2:SHA1 表示idfa是否加密,默认填0表示不加密，若无idfa则本字段为空
+		optional string openudid = 6;			//Openudid, 默认不加密，用户设备如果为ios或android，本字段会填写原始openudid，否则为空
+		optional uint32 carrier = 7;			//运营商标识，生成规则是MCC+MNC，见 https://en.wikipedia.org/wiki/Mobile_country_code#China_-_CN
+		optional string make = 8;				//[无效字段]设备品牌，如"Apple"，
+		optional string model = 9;				//[无效字段]设备型号，如"iPhone" 
+		optional string os = 10;				//设备操作系统，如"iPhone.OS.9.3.2" "Android 5.0.2"
+		optional string Osv = 11;				//[无效字段]设备操作系统版本，如"3.1.2"
+		optional uint32 Js = 12;				//[无效字段]是否支持javascript 1:支持JavaScript; 0:不支持，
+		optional uint32 connectiontype = 13;	//连接类型，0：未知; 1：以太网; 2：Wifi; 3：移动数据-未知; 4：2G; 5：3G; 6：4G
+		optional uint32 devicetype = 14;		//[无效字段]设备类型 1：手机/平板  2：个人电脑  3：TV 
+		optional string mac = 15;               //加密后的mac, MD5(MAC)转大写    加密前先进行格式转换（去除分隔符‘:’->转大写），仅android设备会填写本字段，否则为空
+		optional string imei = 16;              //加密后的imei, MD5(imei)转大写  对原始值加密，仅android设备会填写本字段，否则为空
+		optional string androidid = 17;         //加密后的androidid, MD5(androidid)转大写  对原始值加密，仅android设备会填写本字段，否则为空
+	}
+	message User
+	{  
+		optional string id = 1; 				//tuid   dsp与腾讯进行cookieMapping后产生的腾讯侧用户标识tuid（不推荐使用）
+		optional string buyerid=2; 				//dsp user id  dsp与腾讯进行cookieMapping后保存的dsp侧的用户标识（推荐dsp使用本字段识别用户）
+		optional string gender = 3;     		//[无效字段] 性别 M 代表男 F 代表女 不填代表未知
+		optional uint32 age = 4;        		//[无效字段] 年龄（0-20（0）、21-30（1）、31-40（2）、41-50(3)、51-60(4)、60+(5)这几个分段）不填代表未知 [无效字段]
+		repeated string tag_id = 5;             // 人群包信息 （非用户隐私数据，仅合作方dsp使用）
+	}
+	
+
+	optional string id = 1;          			//用于标识一次请求的请求id，dsp需要在回复时在Response.id字段中填写该字段，带回给腾讯adx
+	optional uint32 at = 2; 					//用于区分是第一高价竞价（值为1）还是第二高价竞价（值为2），腾讯采用第二高价竞价本字段填固定值2，dsp可以只处理at值为2的请求（仅rtb）
+	optional Site site = 3;          			//媒体站点信息（老的pc资源会填写，大部分资源都不填写本结构内的字段，dsp可以忽略本字段不处理）
+	optional Device device = 4;      			//设备信息 通过本结构可获取用户的设备id
+	optional User user = 5;          			//用户信息
+	repeated Impression impression = 6; 		//曝光机会，一次请求可含多个广告位，每个广告位为一次曝光机会
+	optional string inner_info = 7;	//[无效字段]内部使用
+	message App
+	{
+		optional string id = 1;					//[无效字段]应用程序ID，Android 上表现为程序的包名, 例如：com.rovio.angrybirds，iOS 上表现为AppStore 上的ID，例如：327860。
+		optional string name = 2;				//应用程序名称 如“腾讯视频 4.7.0.9924” “腾讯新闻 4.9.1”
+		optional string domain = 3;				//[无效字段]应用程序域名。
+		repeated string cat = 4;			    //[无效字段]应用在AppStore 或者GooglePlay 或者其他应用市场的的分类信息。
+		repeated string sectioncat = 5;	        //[无效字段]子分类。
+	}
+	optional App app = 8;            //移动app信息 内部包括app的名称(仅移动端资源才有本字段，否则为空)
+	repeated string unlike_order_list = 9;          //用户不喜欢订单列表 dsp不能再出相同订单（仅rtb）
+	message PlayOrder{
+		optional string oid = 1;  //订单号
+		optional uint32 index = 2; //订单相对位置（新闻客户端才会填）
+	}
+	repeated PlayOrder oids = 10;					//新闻客户端当前频道当前已播放订单，透传给dsp用来做去重，dsp不能再出相同订单（仅rtb）
+	repeated string request_black_orders = 11;		//请求级订单去重(手腾网去重)，dsp不能再出相同订单（仅rtb）
+	message ChannelBlackOrders
+	{
+		optional uint32 channel_id = 1;
+		repeated string black_orders = 2; 			//频道内不允许出现的订单
+	}
+	repeated ChannelBlackOrders channel_black_orders = 12;	//请求级频道内订单去重(快报去重)，dsp不能再出相同订单（仅rtb）
+	optional bool is_order_cache = 13; //是否是订单池请求 新闻客户端订单池，dsp不能再出相同订单（仅rtb）
+	optional bool is_first_time = 14;  //[无效字段]是否冷启动，第一次打开APP
+}
+
+//审核接口
+message Response
+{
+	message BidResponseExt
+	{
+        optional string up_version = 1;   //升级版本号
+    }
+	message Bid
+	{
+		optional string id = 1;     			//dsp自己标识一次曝光机会的id（可不填）
+		optional string impid = 2;     			//必填，标识曝光ID(设置为对应Request.Impression.id)
+		optional float price = 3;     			//dsp对本次曝光的出价，单位千次曝光分 （仅rtb）
+		optional string adid = 4;      			//广告创意ID或订单ID，跟素材上传api中的dsp_order_id相同
+		optional string nurl = 5;      			//[无效字段]win notice url [填充"NoWinNotice"表示不需要winNotice]
+		optional string adm = 6;       			//[无效字段]目前不使用 url已失效
+		optional string ext = 7;       			//替换曝光监测和点击落地页和点击检测中的宏${EXT}。(base64 encoded preferred，512字节以内) （可不填）
+		optional string adm_para = 8;			//[无效字段]传递给adm的参数列表字符串,如 http://creative.dsp.mediav.com/aa.html?cid=xxxx&pid=xxxx  该字段填充'?'后的部分,不包括问号，动态素材(html素材)的参数
+		optional string inner_resp = 9;	//[无效字段]内部使用
+		optional string ext2 = 10;         		//替换曝光监测、点击落地页和点击监测中的宏${EXT2}。(base64 encoded preferred，512字节以内) （可不填）
+		repeated string disp_exts = 11; 		// 只替换曝光监测的宏， repeated字段最多3个，分别替换这三个宏${DISPLAY_EXT1}${DISPLAY_EXT2}${DISPLAY_EXT3}，(base64 encoded preferred，512字节以内)（可不填）
+		repeated string click_exts = 12;		// click monitor exts ${CLICK_EXT1/2/3} 最多3个 每个(base64 encoded preferred，512字节以内)（可不填）
+		optional string ext3 = 13;         		// 替换曝光监测、点击落地页和点击监测中的宏${EXT3} (base64 encoded preferred，512字节以内)（可不填）
+		optional uint32 display_type = 14;      // [无效字段]选中广告形式 1:信息流大图 2:原生信息流3:信息流三小图 4:组图最后一帧(免审核使用，免审核协议转换到审核协议时填写) （仅rtb）
+		optional uint32 stype = 15;             // [无效字段]凤凰网 1：仅图片（默认）2：仅文字；3：图文（信息流）4：三小图
+		optional string dealid = 16;		    // [无效字段]指定选中订单，如果为空，则默认为Request中的主选订单（仅pd&pdb）
+	}
+
+	message SeatBid
+	{
+		repeated Bid bid = 1;					//与request中的impression对应，可以对多个impression回复参与竞价，也可以对其中一部分回复参与竞价
+	}
+
+	optional string id = 1;          			//dsp必须填写Request.id字段中的内容，即使放弃本次曝光机会也必须回复本字段
+	optional string bidid = 2; 	 				//dsp方自己标识本次请求的请求id（可不填）
+	repeated SeatBid seatbid = 3;  				//回复参与竞价信息，目前只支持将回复结果设置在seatbid[0]； 这里填写dsp出单的具体内容
+	optional BidResponseExt ext = 4;            //附加信息
+}
+
+
+//免审核接口
+message Direct_Response
+{
+	message MaterialInfo
+	{
+		optional string content = 1; 		//如果是format为txt，则content为utf-8编码的字符串；其他format为文件url	
+		optional string format = 2;         //素材的格式,文件后缀名，全小写如：jpg,swf,txt(表示文字链) 
+	}
+	message AppInfo
+	{
+		optional string pkg_name = 1;    //唤起app的包名（用户为android系统时需要提供本字段） (用来判断应用是否安装,ios则直接提取deep_link中的scheme判断)
+		optional string deep_link = 2;   //pkg url 比如 dianping://shopinfo?id=1859284 openapp.jdmobile://viturl?params=%szxdfas%,
+		                                 //通用结构如scheme://host/path?query [application]+[openURL]+[options]
+		optional string down_load_url=3;  //[无效字段]下载类url
+		optional string app_name = 4;	 // app name for android（仅android含有本字段）
+	}
+	message Bid                 
+	{
+		optional string id = 1;     			//dsp自己标识一次曝光机会的id（可不填）
+		optional string impid = 2;     			//标识曝光ID(设置为对应Request.Impression.id)
+		repeated MaterialInfo materials = 3;    //素材信息，repeated结构，填写订单中每个素材的具体信息	
+		repeated string monitorurl = 4;  		//第三方曝光监测URL,最多3个
+		optional string click_url = 5;         //点击落地页
+		optional string ext = 6;       			//替换曝光监测、点击落地页和点击监测中的宏${EXT}。(要求base64 encode，每个不超过256字节，dsp接收到后自己base64 decode)（可不填）
+		repeated string disp_exts = 7; 		// 只替换曝光监测的宏， repeated字段最多3个，分别替换这三个宏${DISPLAY_EXT1}${DISPLAY_EXT2}${DISPLAY_EXT3}。(要求base64 encode，每个不超过256字节，dsp接收到后自己base64 decode)（可不填）
+		repeated string click_exts = 8;		// 只替换点击监测和点击落地页中的宏，repeated字段最多3个，分别替换这三个宏${ CLICK_EXT1 }${ CLICK_EXT2}${ CLICK_EXT3}。(要求base64 encode，每个不超过256字节，dsp接收到后自己base64 decode)（可不填）
+		repeated string click_monitor_urls = 9;   // click monitor urls （可不填）
+		optional float price = 10;     			//dsp对本次曝光的出价，单位千次曝光分
+		optional AppInfo app_info = 11;    //点击唤起app 和app下载的信息 【仅高级功能才填】
+		optional uint32 display_type = 12; //选中的播放形式 1:信息流大图 2:原生信息流3:信息流三小图； dsp根据impression.display_type.display_type中给的几种展示形式进行选单，选到合适的订单后将该订单对应的展示形式回复给adx，取值只能是请求中指定的值（仅rtb）
+		optional uint32 creative_id =13;  //创意id 需要dsp给出一个广告创意id，用来标识一组素材，与本dsp在同一资源（如新闻app、快报app等）同时展示的其他广告创意做区分，如果不同创意的创意id相同，会在app端出现覆盖现象，都展示为最新的一个。
+		optional uint32 display_id = 14;  //[无效字段]智汇推闪屏专用 新闻客户端不同版本使用不同播放形式，优先级高于订单内的播放形式,0表示默认使用订单的播放形式
+		optional uint32 click_type = 15;        // 播放形式动作 1：唤起  2: 下载；从请求给出的值中选择一个点击类型，只能填请求中指定的
+		optional string adid = 16;      		//广告ID或订单ID，跟素材上传api中的dsp_order_id相同 （半免审核使用）
+	}
+
+	message SeatBid
+	{
+		repeated Bid bid = 1;					//与request中的impression对应，可以对多个impression回复参与竞价，也可以对其中一部分回复参与竞价
+	}
+
+	optional string id = 1;          			//dsp必须填写Request.id字段中的内容，即使放弃本次曝光机会也必须回复本字段
+	optional string bidid = 2; 	 				//dsp方自己标识本次请求的请求id（可不填）
+	repeated SeatBid seatbid = 3;  				//回复参与竞价信息， 目前只支持将回复结果设置在seatbid[0]
+}
+

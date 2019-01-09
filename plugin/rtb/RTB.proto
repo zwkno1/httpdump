@@ -1,0 +1,202 @@
+
+package RTB;
+
+message Request
+{
+
+	message Site
+	{
+		optional string id = 1;
+		optional string name = 2;
+		optional string domain = 3;
+		optional string cat = 4;
+		optional string sectioncat = 5;
+		optional string page = 6;//
+		optional string ref = 7;
+		optional string search = 8;//
+		optional string keywords = 9;//
+		optional string title = 10;// 页面标题
+	}
+
+	message App
+	{
+		optional string id = 1;					//应用程序ID，Android 上表现为程序的包名, 例如：com.rovio.angrybirds，iOS 上表现为AppStore 上的ID，例如：327860
+		optional string name = 2;				//应用程序名称
+		optional string bundle = 3;				//Android, this should be a bundle or package name (e.g., com.foo.mygame).  On iOS, it is a numeric ID
+		optional string domain = 4;				//应用程序域名
+		optional string storeurl = 5;
+		repeated string cat = 6;				//应用在AppStore 或者GooglePlay 或者其他应用市场的的分类信息
+		repeated string sectioncat = 7;			//子分类
+	}
+
+	message Device
+	{
+		message Geo
+		{
+			optional float latitude = 1;		//纬度，取值从-90到90，南为负值
+			optional float longitude = 2;		//经度，取值从-180到180，西为负值
+		}
+
+		optional string ua = 1;					//user agent
+		optional string ip = 2;					//user ip
+		optional Geo geo = 3;					//地理位置信息，只提供一定精度模糊值，产生规则详见说明文档。
+		optional uint32 w = 4;					//屏幕width,in pixels
+		optional uint32 h = 5;					//屏幕height,in pixels
+		optional string idfa = 6;				//IDFA, 默认不加密 （如果以MD5方式加密，MD5(idfa)转大写）
+		optional uint32 idfa_enc = 7;			//0: 明文，1 ：MD5, 2:SHA1 默认填0
+		optional string mac = 8;				//[V4.0]mac
+		optional uint32 mac_enc = 9;			//0: 明文，1 ：MD5, 2:SHA1 默认填0
+		optional string imei = 10;				//[V4.0]imei
+		optional uint32 imei_enc = 11;			//0: 明文，1 ：MD5, 2:SHA1 默认填0
+		optional string androidid = 12;			//[androidid
+		optional string openudid = 13;			//Openudid
+		optional string carrier = 14;			//运营商标识
+		optional string make = 15;				//设备品牌，如"Apple"
+		optional string model = 16;				//设备型号，如"iPhone"
+		optional string os = 17;				//设备操作系统，如"iOS"
+		optional string osv = 18;				//设备操作系统版本，如"3.1.2"
+		optional string hwv = 19;				//Hardware version of the device (e.g., “5S” for iPhone 5S)
+		optional uint32 ppi = 20;				//Screen size as pixels per linear inch
+		optional float  pxratio = 21;			// The ratio of physical pixels to device independent pixels
+		optional uint32 Js = 22;				//1:支持JavaScript; 0:不支持
+		optional uint32 connectiontype = 23;	//连接类型，0：未知; 1：以太网; 2：Wifi; 3：移动数据-未知; 4：2G; 5：3G; 6：4G;
+		optional uint32 devicetype = 24;		//1：手机/平板  2：个人电脑  3：TV
+	}
+
+	message User
+	{
+		optional string id = 1;// 用户ID
+		optional string buyeruid = 2;
+		optional string usertag = 3;
+		message Target
+		{
+			required string key = 1;
+			required string value = 2;
+		}
+		repeated Target target = 4;
+	}
+
+	message Banner
+	{
+		repeated string mimes = 1;          //支持的素材类型(如 "jpg","swf") repeated结构表示可以是多种选择中的一个，如“jpg”，“gif”，“swf”
+        optional uint32 w = 2;     		//广告位宽度
+		optional uint32 h = 3;    		//广告位高度
+	}
+	
+	message Audio 
+	{
+        repeated string mimes = 1;
+		optional uint32 minduration = 2;	//seconds
+		optional uint32 maxduration = 3;	//seconds
+	}
+
+	message Video
+	{
+		repeated string mimes = 1;
+		optional uint32 minduration = 2;	//seconds
+		optional uint32 maxduration = 3;	//seconds
+		optional uint32 w = 4;				// width of the video player,in DIPS (device independent pixels)
+		optional uint32 h = 5;				// height of the video player,in DIPS
+	}
+
+	message Native
+	{
+		optional string request = 1;		//Request payload complying with the Native Ad Specification.
+		optional string ver = 2;			//recommended Version of the Dynamic Native Ads API to which request complies;
+	}
+
+	message Pmp
+	{
+		optional uint32 private_auction = 1;//default 0,Indicator of auction eligibility to seats named in the Direct Deals object, where 0 = all bids are accepted, 1 = bids are restricted to the deals specified and the terms thereof.
+		repeated Deal deals = 2;		//
+	}
+
+	message Deal
+	{
+		required string id = 1;				//A unique identifier for the direct deal.
+		optional float bidfloor = 2;		// default 0 Minimum bid for this impression expressed in CPM.
+	}
+
+	message Impression
+	{
+		optional string id = 1;				//曝光ID：
+		optional string tagid = 2;			//广告位ID
+		optional Banner banner = 3;
+		optional Video video = 4;
+		optional Audio audio= 5;
+		optional Native native = 6;
+		optional float bidfloor = 7;
+		optional string tradecode = 8;
+		optional Pmp  pmp = 9;
+		optional string channel = 10;
+		message CarouselHistory
+        {
+            required uint32 index = 1;
+            required uint32 order = 2;
+        }
+     
+        message Carousel
+        {
+            required uint32 index = 1;
+            repeated CarouselHistory history = 2;
+        }
+        
+        optional Carousel carousel = 11;
+        optional string subchannel = 12;
+	}
+
+	required string id = 1;					//Unique ID of the bid request,
+	repeated Impression impression= 2;		//曝光
+	optional Site site = 3;					//媒体站点信息
+	optional App app = 4;					//APP 基本信息
+	optional Device device = 5;				//设备信息
+	optional User user = 6;					//用户信息
+	optional uint32 at = 7;					// default 2 , Auction type, where 1 = First Price, 2 = Second Price
+	optional uint32 test = 100;           // test
+}
+
+message Response
+{
+	message MaterialInfo
+	{
+		optional string content = 1; 		//如果是format为txt，则content为utf-8编码的字符串；其他format为文件url	
+		optional string format = 2;         //素材的格式,文件后缀名，全小写如：jpg,swf,txt(表示文字链) 
+	}
+	
+	message Bid
+	{
+		optional string id = 1;					//response id per impression(dsp 标识曝光的ID)
+		optional string impid = 2;				//必须有，标识曝光ID(设置为对应Request.Impression.id)
+		optional float price = 3;				//出价，单位千次曝光分
+		optional string adid = 4;				//广告ID或订单ID，跟素材上传api中的dsp_order_id相同, 对于免审核的创意(即动态创意)，这个字段可以留作历史查证。保证在DSP侧的ID唯一性，作为竞价时的唯一创意ID
+		optional string nurl = 5;				//目前不建议使用，win notice url
+		optional string adm = 6;				//过时的，目前不使用 url已失效
+		optional string ext = 7;				//替换曝光监测和点击中的宏${EXT}。(base64 encoded preferred，512字节以内)
+		optional string dealid = 8;
+		
+        repeated MaterialInfo materials = 9;    //素材信息，repeated结构，填写订单中每个素材的具体信息	（免审核使用）
+		optional string landingpage = 10;       //点击落地页	（免审核使用）
+		repeated string pm = 11;         		//第三方曝光监测URL,最多3个	（免审核使用）
+		repeated string cm = 12;                // click monitor urls （可不填）（免审核使用）
+	}
+
+	message SeatBid
+	{
+		repeated Bid bid = 1;					//与request中的impression对应，可以对多个impression回复参与竞价，也可以对其中一部分回复参与竞价
+	}
+
+	optional string id = 1;						//bid request id, 同请求ID Request.id，必须有
+	optional string bidid = 2;					//bid response id
+	repeated SeatBid seatbid = 3;				//回复参与竞价信息， 目前只支持将回复结果设置在seatbid[0]
+	
+	message CarouselIndex
+	{
+        required string locid = 1;
+        required uint32 index = 2;
+        optional uint32 orderid = 3;
+	}
+	
+	repeated CarouselIndex carouselindex = 4;
+	
+	optional string test = 100;
+}

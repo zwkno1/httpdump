@@ -9,13 +9,13 @@ cmake ..
 make
 ```
 
-## run example
+## run plugin example
 
 start dump http:
 ```sh
-cd examples/protobuf_plugin/
+cd plugin/test_pb/
 cp ../../httpdump ./
-./httpdump eth0 tcp port 80
+./httpdump -c ./config.json tcp port 80
 ```
 
 then run:
