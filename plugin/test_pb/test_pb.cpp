@@ -1,6 +1,7 @@
 #include <plugin.h>
 #include <test.pb.h>
 #include <google/protobuf/util/json_util.h>
+#include <boost/dll.hpp>
 
 namespace
 {
@@ -8,10 +9,10 @@ namespace
 class ProtobufTestHandler : public HttpHandler
 {
 public:
-	bool handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message) override
+    bool handleHttpRequest(const Tuple4 & tuple4, HttpRequest & message) override
 	{
 		test::Company company;
-		if(!company.ParseFromString(message.body))
+        if(!company.ParseFromString(message.body()))
 		{
 			return false;
 		}
@@ -20,14 +21,14 @@ public:
 		google::protobuf::util::JsonPrintOptions option;
 		option.add_whitespace = true;
 		google::protobuf::util::MessageToJsonString(company, &text, option);
-		message.body = std::move(text);
+        message.body() = std::move(text);
 		return true;
-	}
+    }
 
-	~ProtobufTestHandler() override
-	{
-
-	}
+    bool handleHttpResponse(const Tuple4 & tuple4, HttpResponse & message) override
+    {
+        return false;
+    }
 };
 
 }
@@ -36,5 +37,4 @@ HttpHandlerPtr createHttpHandler()
 {
 	return std::make_shared<ProtobufTestHandler>();
 }
-
 

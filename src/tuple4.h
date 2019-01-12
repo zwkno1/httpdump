@@ -1,13 +1,13 @@
 #pragma once
 
-#include <iostream>
+#include <iosfwd>
 
-#include <boost/asio.hpp>
+#include "http.h"
 
 struct Tuple4
 {
-    boost::asio::ip::tcp::endpoint client;
-    boost::asio::ip::tcp::endpoint server;
+    Endpoint client;
+    Endpoint server;
 
     bool operator < (const Tuple4 & other) const
     {

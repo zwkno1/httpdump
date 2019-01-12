@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 project (httpdump)
 
-set(CMAKE_CXX_STANDARD 11)
+set(Boost_USE_STATIC_LIBS ON)
+
+#set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
@@ -15,8 +17,6 @@ find_package(PCAP REQUIRED)
 include_directories(${LIBTINS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ./src)
 
 set(SOURCE_FILES src/main.cpp
-	src/http.cpp
-    src/detail/http_parser.c
     )
 
 add_executable(httpdump ${SOURCE_FILES})

@@ -120,6 +120,44 @@ struct Config
 	}
 };
 
+class HttpHandlerDispatcher : public HttpHandler
+{
+public:
+    void registHandler(HttpHandlerPtr & h)
+    {
+        handlers_.push_back(h);
+    }
+
+    bool handleHttpRequest(const Tuple4 & tuple4, HttpRequest & message) override
+    {
+        std::cout << message << std::endl;
+        for(auto & h : handlers_)
+        {
+            if(h->handleHttpRequest(tuple4, message))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool handleHttpResponse(const Tuple4 & tuple4, HttpResponse & message) override
+    {
+        std::cout << message << std::endl;
+        for(auto & h : handlers_)
+        {
+            if(h->handleHttpResponse(tuple4, message))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    std::vector<HttpHandlerPtr> handlers_;
+};
+
 int main(int argc, char* argv[])
 {
 	Config config;
@@ -142,12 +180,14 @@ int main(int argc, char* argv[])
 
 		std::cout << "[CAPTURE]" << config.interface << std::endl;
 
-		TcpHandler h;
+        auto d = std::make_shared<HttpHandlerDispatcher>();
 		std::vector<HttpHandlerPtr> httpHandlers = loadHttpHandlers(config.pluginConfigFile);
 		for(auto & i : httpHandlers)
 		{
-			h.registHandler(i);
-		}
+            d->registHandler(i);
+        }
+
+        TcpHandler h{d};
 
 		// Now construct the stream follower
 		Tins::TCPIP::StreamFollower follower;
