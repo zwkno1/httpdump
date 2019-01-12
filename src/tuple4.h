@@ -1,13 +1,13 @@
 #pragma once
 
-#include <iostream>
+#include <iosfwd>
 
-#include <boost/asio.hpp>
+#include "http.h"
 
 struct Tuple4
 {
-    boost::asio::ip::tcp::endpoint client;
-    boost::asio::ip::tcp::endpoint server;
+    Endpoint client;
+    Endpoint server;
 
     bool operator < (const Tuple4 & other) const
     {
@@ -21,7 +21,7 @@ struct Tuple4
 
 inline std::ostream & operator<< (std::ostream & os, const Tuple4 & tuple4)
 {
-    os << "[" << tuple4.client.address().to_string() << ":" << tuple4.client.port()
-       << " -> " << tuple4.server.address().to_string() << ":" << tuple4.server.port() << "]";
+    os << tuple4.client.address().to_string() << ":" << tuple4.client.port()
+       << " -> " << tuple4.server.address().to_string() << ":" << tuple4.server.port();
     return os;
 }

@@ -22,42 +22,37 @@ namespace
 class RTBHandler : public HttpHandler
 {
 public:
-	bool handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message) override
+    bool handleHttpRequest(const Tuple4 & tuple4, HttpRequest & message) override
 	{
-		if(message.isRequest)
-		{
-			if(message.url == "/djt")
-			{
-				pb2json(RTB::Request, message.body, message.body);
-			}
-			else if(message.url == "/baidu_djt")
-			{
-				pb2json(BAIDU::BidRequest, message.body, message.body);
-			}
-			else if(message.url == "/tencent_djt")
-			{
-				pb2json(TENCENT::Request, message.body, message.body);
-			}
-			else if(message.url == "/wifi_djt")
-			{
-				pb2json(WIFI::Request, message.body, message.body);
-			}
-		}
-		else
-		{
-			pb2json(RTB::Response, message.body, message.body);
-			pb2json(BAIDU::BidResponse, message.body, message.body);
-			pb2json(TENCENT::Response, message.body, message.body);
-			pb2json(WIFI::Response, message.body, message.body);
-		}
+        std::cout << message << std::endl;
+        if(message.target() == "/djt")
+        {
+            pb2json(RTB::Request, message.body(), message.body());
+        }
+        else if(message.target() == "/baidu_djt")
+        {
+            pb2json(BAIDU::BidRequest, message.body(), message.body());
+        }
+        else if(message.target() == "/tencent_djt")
+        {
+            pb2json(TENCENT::Request, message.body(), message.body());
+        }
+        else if(message.target() == "/wifi_djt")
+        {
+            pb2json(WIFI::Request, message.body(), message.body());
+        }
+        return false;
+    }
 
-		return false;
-	}
+    bool handleHttpResponse(const Tuple4 & tuple4, HttpResponse & message) override
+    {
+        pb2json(RTB::Response, message.body(), message.body());
+        pb2json(BAIDU::BidResponse, message.body(), message.body());
+        pb2json(TENCENT::Response, message.body(), message.body());
+        pb2json(WIFI::Response, message.body(), message.body());
 
-	~RTBHandler() override
-	{
-
-	}
+        return false;
+    }
 
 private:
 	bool serializeToJson(const google::protobuf::Message & message, std::string & output)

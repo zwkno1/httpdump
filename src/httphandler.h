@@ -8,13 +8,19 @@
 class HttpHandler
 {
 public:
-    /*
-     * @direction@ true: client->server, false: server->client
-     */
-    virtual bool handleHttpMessage(const Tuple4 & tuple4, bool direction, HttpMessage & message) = 0;
+    //virtual void handleHttpEstablish(const Tuple4 & tuple4) = 0;
 
-    virtual ~HttpHandler() = 0;
+    //virtual void handleHttpClose(const Tuple4 & tuple4) = 0;
+
+    virtual bool handleHttpRequest(const Tuple4 & tuple4, HttpRequest & request) = 0;
+
+    virtual bool handleHttpResponse(const Tuple4 & tuple4, HttpResponse & response) = 0;
+
+    virtual ~HttpHandler();
 };
 
-typedef std::shared_ptr<HttpHandler> HttpHandlerPtr;
+HttpHandler::~HttpHandler()
+{
+}
 
+typedef std::shared_ptr<HttpHandler> HttpHandlerPtr;

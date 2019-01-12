@@ -33,7 +33,7 @@ std::vector<HttpHandlerPtr> loadHttpHandlers(const std::string & configFile)
 		{
 			std::string handlerName = i.second.get_value<std::string>();
 
-			std::cout << "[PLUGIN]" << handlerName << std::endl;
+			std::cerr << "[PLUGIN]" << handlerName << std::endl;
 			boost::filesystem::path libPath(workDir);
 			libPath /= handlerName;
 			auto factory = boost::dll::import<createHttpHandlerFunc>(
@@ -51,11 +51,11 @@ std::vector<HttpHandlerPtr> loadHttpHandlers(const std::string & configFile)
 	}
 	catch(boost::property_tree::ptree_error & err)
 	{
-		std::cout << "parse config " << configFile << " failed: " << err.what() << std::endl;
+		std::cerr << "parse config " << configFile << " failed: " << err.what() << std::endl;
 	}
 	catch(std::exception & e)
 	{
-		std::cout << "load config" << configFile << " failed: " << e.what() << std::endl;
+		std::cerr << "load config" << configFile << " failed: " << e.what() << std::endl;
 	}
 
 	return handlers;
@@ -88,7 +88,7 @@ struct Config
 
 			if(vm.count("help"))
 			{
-				std::cout << "Usage: httpdump [options]\n" << desc << std::endl;
+				std::cerr << "Usage: httpdump [options]\n" << desc << std::endl;
 				return false;
 			}
 
@@ -114,10 +114,46 @@ struct Config
 		}
 		catch(std::exception & e)
 		{
-			std::cout << e.what() << std::endl;
+			std::cerr << e.what() << std::endl;
 			return false;
 		}
 	}
+};
+
+class HttpHandlerDispatcher : public HttpHandler
+{
+public:
+    void registHandler(HttpHandlerPtr & h)
+    {
+        handlers_.push_back(h);
+    }
+
+    bool handleHttpRequest(const Tuple4 & tuple4, HttpRequest & message) override
+    {
+        for(auto & h : handlers_)
+        {
+            if(h->handleHttpRequest(tuple4, message))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool handleHttpResponse(const Tuple4 & tuple4, HttpResponse & message) override
+    {
+        for(auto & h : handlers_)
+        {
+            if(h->handleHttpResponse(tuple4, message))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    std::vector<HttpHandlerPtr> handlers_;
 };
 
 int main(int argc, char* argv[])
@@ -140,14 +176,16 @@ int main(int argc, char* argv[])
 		// Construct the sniffer we'll use
 		Tins::Sniffer sniffer(config.interface, snifferConfig);
 
-		std::cout << "[CAPTURE]" << config.interface << std::endl;
+		std::cerr << "[CAPTURE]" << config.interface << std::endl;
 
-		TcpHandler h;
+        auto d = std::make_shared<HttpHandlerDispatcher>();
 		std::vector<HttpHandlerPtr> httpHandlers = loadHttpHandlers(config.pluginConfigFile);
 		for(auto & i : httpHandlers)
 		{
-			h.registHandler(i);
-		}
+            d->registHandler(i);
+        }
+
+        TcpHandler h{d};
 
 		// Now construct the stream follower
 		Tins::TCPIP::StreamFollower follower;
