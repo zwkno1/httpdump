@@ -13,6 +13,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/external/external.cmake)
 find_package(Threads)
 find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
 find_package(PCAP REQUIRED)
+find_package(Protobuf REQUIRED)
 
 include_directories(${LIBTINS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ./src)
 
