@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 
 project (httpdump)
 
-option(BUILD_PLUGIN ON)
+option(HTTPDUMP_BUILD_PLUGIN "build plugin" ON)
 set(Boost_USE_STATIC_LIBS ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
@@ -20,11 +20,10 @@ set(SOURCE_FILES src/main.cpp
 
 add_executable(httpdump ${SOURCE_FILES})
 add_dependencies(httpdump libtins)
-#add_dependencies(httpdump libpcap)
 
 target_link_libraries(httpdump ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${LIBTINS_LIBRARIES} ${PCAP_LIBRARIES} ${CMAKE_DL_LIBS})
 
-if(BUILD_PLUGIN)
+if(HTTPDUMP_BUILD_PLUGIN)
 	add_subdirectory(plugin/test_pb)
 	add_subdirectory(plugin/rtb)
 endif()

@@ -1,10 +1,6 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 
 project(RTB)
-
-#set(Boost_USE_STATIC_LIBS ON)
-
-find_package(Boost REQUIRED)
 
 file(GLOB ProtoFiles "${CMAKE_CURRENT_SOURCE_DIR}/*.proto")
 list(APPEND ProtoSources BAIDU.pb.cc RTB.pb.cc TENCENT.pb.cc WIFI.pb.cc)
@@ -19,10 +15,9 @@ include_directories(../src ${CMAKE_CURRENT_BINARY_DIR} ${Boost_INCLUDE_DIRS} ${P
 aux_source_directory(. SRC_LIST)
 
 add_library(RTB SHARED ${SRC_LIST} ${ProtoSources})
-target_link_libraries(RTB ${PROTOBUF_LIBRARY})
+target_link_libraries(RTB ${PROTOBUF_STATIC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 add_dependencies(RTB protobuf_source)
-add_dependencies(RTB httpdump)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/config.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 

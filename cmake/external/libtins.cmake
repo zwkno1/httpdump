@@ -4,11 +4,11 @@ set(LIBTINS_TAG v4.1)
 #set(LIBTINS_URL https://github.com/mfontanini/libtins.git)
 set(LIBTINS_URL https://github.com/mfontanini/libtins/archive/${LIBTINS_TAG}.tar.gz)
 
-set(LIBTINS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libtins/src/libtins/include)
-set(LIBTINS_LIBRARIES ${CMAKE_BINARY_DIR}/libtins/src/libtins/lib/libtins.a)
+set(LIBTINS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/external/libtins/src/libtins/include)
+set(LIBTINS_LIBRARIES ${CMAKE_BINARY_DIR}/external/libtins/src/libtins/lib/libtins.a)
 
 ExternalProject_Add(libtins
-	PREFIX            "libtins"
+	PREFIX            external/libtins
 	#DEPENDS           libpcap
 	#GIT_REPOSITORY ${LIBTINS_URL}
 	#GIT_TAG ${LIBTINS_TAG}
@@ -18,7 +18,7 @@ ExternalProject_Add(libtins
 	DOWNLOAD_DIR "${DOWNLOAD_LOCATION}"
 	BUILD_IN_SOURCE 1
 	BUILD_BYPRODUCTS ${LIBTINS_LIBRARIES}
-	SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/libtins/src/libtins
+	SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/libtins/src/libtins
 	CONFIGURE_COMMAND ${CMAKE_COMMAND} 
 	    -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=${ENABLE_POSITION_INDEPENDENT_CODE}
 		-DLIBTINS_BUILD_SHARED=0

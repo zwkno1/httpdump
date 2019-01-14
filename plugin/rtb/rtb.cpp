@@ -78,4 +78,3 @@ HttpHandlerPtr createHttpHandler()
 	return std::make_shared<RTBHandler>();
 }
 
-

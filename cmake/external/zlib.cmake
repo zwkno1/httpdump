@@ -14,30 +14,30 @@ else (systemlib_ZLIB)
   include (ExternalProject)
 
   set(zlib_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/zlib_archive)
-  set(ZLIB_BUILD ${CMAKE_CURRENT_BINARY_DIR}/zlib/src/zlib)
-  set(ZLIB_INSTALL ${CMAKE_CURRENT_BINARY_DIR}/zlib/install)
-  # Match zlib version in tensorflow/workspace.bzl
+  set(ZLIB_BUILD ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/src/zlib)
+  set(ZLIB_INSTALL ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/install)
   set(ZLIB_TAG v1.2.11)
   #set(ZLIB_URL https://github.com/madler/zlib)
   set(ZLIB_URL https://github.com/madler/zlib/archive/${ZLIB_TAG}.tar.gz)
+  set(ZLIB_MD5 0095d2d2d1f3442ce1318336637b695f)
 
   if(WIN32)
     if(${CMAKE_GENERATOR} MATCHES "Visual Studio.*")
       set(zlib_STATIC_LIBRARIES
-          debug ${CMAKE_CURRENT_BINARY_DIR}/zlib/install/lib/zlibstaticd.lib
-          optimized ${CMAKE_CURRENT_BINARY_DIR}/zlib/install/lib/zlibstatic.lib)
+          debug ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/install/lib/zlibstaticd.lib
+          optimized ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/install/lib/zlibstatic.lib)
     else()
       if(CMAKE_BUILD_TYPE EQUAL Debug)
         set(zlib_STATIC_LIBRARIES
-            ${CMAKE_CURRENT_BINARY_DIR}/zlib/install/lib/zlibstaticd.lib)
+            ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/install/lib/zlibstaticd.lib)
       else()
         set(zlib_STATIC_LIBRARIES
-            ${CMAKE_CURRENT_BINARY_DIR}/zlib/install/lib/zlibstatic.lib)
+            ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/install/lib/zlibstatic.lib)
       endif()
     endif()
   else()
     set(zlib_STATIC_LIBRARIES
-        ${CMAKE_CURRENT_BINARY_DIR}/zlib/install/lib/libz.a)
+        ${CMAKE_CURRENT_BINARY_DIR}/external/zlib/install/lib/libz.a)
   endif()
 
   set(ZLIB_HEADERS
@@ -46,16 +46,17 @@ else (systemlib_ZLIB)
   )
 
   ExternalProject_Add(zlib
-      PREFIX zlib
+      PREFIX external/zlib
 	  #GIT_REPOSITORY ${ZLIB_URL}
       #GIT_TAG ${ZLIB_TAG}
 	  URL ${ZLIB_URL}
+	  URL_MD5 ${ZLIB_MD5}
       INSTALL_DIR ${ZLIB_INSTALL}
       BUILD_IN_SOURCE 1
       BUILD_BYPRODUCTS ${zlib_STATIC_LIBRARIES}
       DOWNLOAD_DIR "${DOWNLOAD_LOCATION}"
       CMAKE_CACHE_ARGS
-          -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=${tensorflow_ENABLE_POSITION_INDEPENDENT_CODE}
+          -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=${ENABLE_POSITION_INDEPENDENT_CODE}
           -DCMAKE_BUILD_TYPE:STRING=Release
           -DCMAKE_INSTALL_PREFIX:STRING=${ZLIB_INSTALL}
   )
