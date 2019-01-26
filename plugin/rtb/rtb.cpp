@@ -5,6 +5,7 @@
 #include <BAIDU.pb.h> 
 #include <TENCENT.pb.h> 
 #include <WIFI.pb.h>
+#include <audience.pb.h>
 
 namespace
 {
@@ -41,6 +42,10 @@ public:
         {
             pb2json(WIFI::Request, message.body(), message.body());
         }
+		else
+		{
+            pb2json(audience::Request, message.body(), message.body());
+		}
         return false;
     }
 
@@ -50,6 +55,7 @@ public:
         pb2json(BAIDU::BidResponse, message.body(), message.body());
         pb2json(TENCENT::Response, message.body(), message.body());
         pb2json(WIFI::Response, message.body(), message.body());
+        pb2json(audience::Response, message.body(), message.body());
 
         return false;
     }

@@ -76,7 +76,7 @@ struct Config
 			desc.add_options()
 				("help,h", "print help message")
 				("interface,i", boost::program_options::value<std::string>()->default_value("any"), "interface")
-				("plugin-config,c", boost::program_options::value<std::string>()->default_value("./plugin.json"), "plugin config file")
+				("config,c", boost::program_options::value<std::string>()->default_value("./config.json"), "config file")
 				("filter,f", boost::program_options::value< std::vector<std::string> >(), "filter")
 				;
 			boost::program_options::positional_options_description p;
@@ -97,9 +97,9 @@ struct Config
 				interface = vm["interface"].as<std::string>();
 			}
 
-			if(vm.count("plugin-config"))
+			if(vm.count("config"))
 			{
-				pluginConfigFile = vm["plugin-config"].as<std::string>();
+				pluginConfigFile = vm["config"].as<std::string>();
 			}
 
 			if(vm.count("filter"))
