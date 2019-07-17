@@ -24,7 +24,7 @@ add_dependencies(httpdump libtins)
 target_link_libraries(httpdump ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${LIBTINS_LIBRARIES} ${PCAP_LIBRARIES} ${CMAKE_DL_LIBS})
 
 if(HTTPDUMP_BUILD_PLUGIN)
-	option(Protobuf_USE_STATIC_LIBS "use protobuf static library" ON)
+	option(Protobuf_USE_STATIC_LIBS "use protobuf static library" OFF)
 	find_package(Protobuf REQUIRED)
 	add_subdirectory(plugin/test_pb)
 	add_subdirectory(plugin/rtb)
